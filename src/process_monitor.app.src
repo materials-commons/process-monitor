@@ -1,0 +1,12 @@
+{application, process_monitor,
+ [
+  {description, ""},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { process_monitor_app, []}},
+  {env, []}
+ ]}.

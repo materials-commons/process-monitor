@@ -3,3 +3,9 @@ deps
 *.o
 *.beam
 *.plt
+*.swp
+ebin
+bin
+rel/process_monitor
+rel/files/app.config
+*.dump
