@@ -2,11 +2,19 @@
  [
   {description, ""},
   {vsn, "0.1.0"},
+  {modules,
+        [
+            pm_app,
+            pm_config_file,
+            pm_server,
+            pm_sup
+        ]
+  },
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
-  {mod, { process_monitor_app, []}},
+  {mod, { pm_app, []}},
   {env, []}
  ]}.
