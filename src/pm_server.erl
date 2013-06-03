@@ -18,35 +18,57 @@
 %%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 %%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%% ===================================================================
+-module(pm_server).
 
--export([start_link/0]).
+%% API
+-export([start_link/1, stop/1]).
 
 -behaviour(gen_server).
+
+%% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE).
+-record(state, {port}).
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(ExternalProcess) ->
+    gen_server:start_link(?MODULE, [ExternalProcess], []).
+
+stop(Pid) ->
+    gen_server:cast(Pid, stop).
+
+%% ===================================================================
+%% gen_server callbacks
+%% ===================================================================
 
 %% @private
-init([]) ->
-    {ok, undefined}.
+init([ExternalProcess]) ->
+    process_flag(trap, true),
+    gen_server:cast(self(), {start_process, ExternalProcess}),
+    {ok, #state{}}.
 
 %% @private
 handle_call(_Request, _From, State) ->
     {reply, {error, unknown_call}, State}.
 
 %% @private
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast({start_process, ExternalProcess}, _State) ->
+    Port = open_port({spawn, ExternalProcess}, []),
+    {noreply, #state{port = Port}};
+handle_cast(stop, State) ->
+    {stop, normal, State}.
 
 %% @private
+handle_info({'EXIT', _Port, Reason}, State) ->
+    {stop, {port_terminated, Reason}, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
 %% @private
-terminate(_Reason, _State) ->
+%% Do something when the process terminates
+terminate({port_terminated, _Reason}, _State) ->
+    ok;
+terminate(_Reason, #state{port = Port}) ->
+    port_close(Port),
     ok.
 
 %% @private

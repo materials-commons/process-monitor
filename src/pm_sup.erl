@@ -1,10 +1,10 @@
 
--module(process_monitor_sup).
+-module(pm_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -26,7 +26,7 @@ start_link({Name, RestartSpec, Jobs}) ->
 
 init([RestartSpec, Jobs]) ->
     Children = construct_supervised_children(Jobs),
-    {ok, { {one_for_one, 5, 10}, Children} }.
+    {ok, { RestartSpec, Children} }.
 
 %% ===================================================================
 %% Local functions
@@ -34,10 +34,11 @@ init([RestartSpec, Jobs]) ->
 create_supervisor_name(JobGroupName) ->
     list_to_atom(atom_to_list(?MODULE) ++ "_" ++ atom_to_list(JobGroupName)).
 
-%1>lists:seq(1,5).
-%[1,2,3,4,5]
-%2>[ {a,b, X} || X <- lists:seq(1,5)].
-%[{a,b,1},{a,b,2},{a,b,3},{a,b,4},{a,b,5}]
-construct_supervised_children(Jobs) -> [].
+%%
+construct_supervised_children(Jobs) ->
+    lists:flatten(lists:map(
+                fun({_JobName, Count, Command}) ->
+                    [?CHILD(Command) || _Ignore <- lists:seq(1,Count)]
+                end, Jobs)).
 
 
