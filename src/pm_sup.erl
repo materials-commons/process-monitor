@@ -1,4 +1,24 @@
 
+%%% ===================================================================
+%%% @author V. Glenn Tarcea <gtarcea@umich.edu>
+%%%
+%%% @doc Server for monitoring jobs.
+%%%
+%%% @copyright Copyright (c) 2013, Regents of the University of Michigan.
+%%% All rights reserved.
+%%%
+%%% Permission to use, copy, modify, and/or distribute this software for any
+%%% purpose with or without fee is hereby granted, provided that the above
+%%% copyright notice and this permission notice appear in all copies.
+%%%
+%%% THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+%%% WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+%%% MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+%%% ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+%%% WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+%%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+%%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+%%% ===================================================================
 -module(pm_sup).
 
 -behaviour(supervisor).
@@ -10,13 +30,14 @@
 -export([init/1]).
 
 %% Helper macro for declaring children of supervisor
--define(CHILD(Args), {pm_server, {pm_server, start_link, Args}, permanent, 5000, worker, [pm_server]}).
+-define(CHILD(Name, Arg), {Name, {pm_server, start_link, [Arg]}, permanent, 5000, worker, [pm_server]}).
 
 %% ===================================================================
 %% API functions
 %% ===================================================================
 
 start_link({Name, RestartSpec, Jobs}) ->
+    io:format("pm_sup starting ~p ~p ~p~n", [Name, RestartSpec, Jobs]),
     SupervisorName = create_supervisor_name(Name),
     supervisor:start_link({local, SupervisorName}, ?MODULE, [RestartSpec, Jobs]).
 
@@ -26,6 +47,7 @@ start_link({Name, RestartSpec, Jobs}) ->
 
 init([RestartSpec, Jobs]) ->
     Children = construct_supervised_children(Jobs),
+    io:format("pm_sup Children = ~p~n", [Children]),
     {ok, { RestartSpec, Children} }.
 
 %% ===================================================================
@@ -37,8 +59,10 @@ create_supervisor_name(JobGroupName) ->
 %%
 construct_supervised_children(Jobs) ->
     lists:flatten(lists:map(
-                fun({_JobName, Count, Command}) ->
-                    [?CHILD(Command) || _Ignore <- lists:seq(1,Count)]
+                fun({JobName, Count, Command}) ->
+                    [?CHILD(create_name(JobName, Counter), Command) || Counter <- lists:seq(1,Count)]
                 end, Jobs)).
 
+create_name(JobName, Counter) ->
+    list_to_atom("pm_server_" ++ atom_to_list(JobName) ++ "_" ++ integer_to_list(Counter)).
 

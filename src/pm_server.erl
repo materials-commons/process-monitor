@@ -31,6 +31,7 @@
 -record(state, {port}).
 
 start_link(ExternalProcess) ->
+    io:format("pm_server:start_link ~p~n", [ExternalProcess]),
     gen_server:start_link(?MODULE, [ExternalProcess], []).
 
 stop(Pid) ->
@@ -42,7 +43,7 @@ stop(Pid) ->
 
 %% @private
 init([ExternalProcess]) ->
-    process_flag(trap, true),
+    process_flag(trap_exit, true),
     gen_server:cast(self(), {start_process, ExternalProcess}),
     {ok, #state{}}.
 
@@ -68,6 +69,7 @@ handle_info(_Info, State) ->
 terminate({port_terminated, _Reason}, _State) ->
     ok;
 terminate(_Reason, #state{port = Port}) ->
+    io:format("Calling port_close ~p~n", [Port]),
     port_close(Port),
     ok.
 

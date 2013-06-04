@@ -37,10 +37,8 @@ start() ->
     application:start(handyman),
     application:start(process_monitor).
 
-
 start(_StartType, _StartArgs) ->
-    start_supervisors(),
-    ok.
+    pm_core_sup:start_link().
 
 stop(_State) ->
     ok.
@@ -49,9 +47,3 @@ stop(_State) ->
 %% Local functions
 %% ===================================================================
 
-start_supervisors() ->
-    {ok, Terms} = file:consult(filename:join([os:getenv("ETC_DIR"), "pm.config"])),
-    lists:foreach(
-        fun({_SupervisorGroup, _RestartSpec, _Jobs} = SupervisorArgs) ->
-            pm_sup:start_link(SupervisorArgs)
-        end, Terms).
