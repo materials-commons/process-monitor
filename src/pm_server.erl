@@ -21,7 +21,7 @@
 -module(pm_server).
 
 %% API
--export([start_link/1, stop/1]).
+-export([start_link/2, stop/1]).
 
 -behaviour(gen_server).
 
@@ -30,9 +30,8 @@
 
 -record(state, {port}).
 
-start_link(ExternalProcess) ->
-    io:format("pm_server:start_link ~p~n", [ExternalProcess]),
-    gen_server:start_link(?MODULE, [ExternalProcess], []).
+start_link(Name, ExternalProcess) ->
+    gen_server:start_link({local, Name}, ?MODULE, [ExternalProcess], []).
 
 stop(Pid) ->
     gen_server:cast(Pid, stop).
@@ -69,7 +68,6 @@ handle_info(_Info, State) ->
 terminate({port_terminated, _Reason}, _State) ->
     ok;
 terminate(_Reason, #state{port = Port}) ->
-    io:format("Calling port_close ~p~n", [Port]),
     port_close(Port),
     ok.
 

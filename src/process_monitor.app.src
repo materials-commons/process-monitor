@@ -7,10 +7,11 @@
             pm_app,
             pm_config_file,
             pm_server,
-            pm_sup
+            pm_sup,
+            pm_core_sup
         ]
   },
-  {registered, []},
+  {registered, [pm_core_sup]},
   {applications, [
                   kernel,
                   stdlib

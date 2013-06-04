@@ -36,7 +36,6 @@ start_link() ->
 %% @private
 init([]) ->
     Children = setup_supervisor_children(),
-    io:format("Children = ~p~n", [Children]),
     {ok, {{one_for_one, 5, 10}, Children}}.
 
 setup_supervisor_children() ->

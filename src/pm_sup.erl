@@ -30,14 +30,13 @@
 -export([init/1]).
 
 %% Helper macro for declaring children of supervisor
--define(CHILD(Name, Arg), {Name, {pm_server, start_link, [Arg]}, permanent, 5000, worker, [pm_server]}).
+-define(CHILD(Name, Arg), {Name, {pm_server, start_link, [Name,Arg]}, permanent, 5000, worker, [pm_server]}).
 
 %% ===================================================================
 %% API functions
 %% ===================================================================
 
 start_link({Name, RestartSpec, Jobs}) ->
-    io:format("pm_sup starting ~p ~p ~p~n", [Name, RestartSpec, Jobs]),
     SupervisorName = create_supervisor_name(Name),
     supervisor:start_link({local, SupervisorName}, ?MODULE, [RestartSpec, Jobs]).
 
@@ -47,7 +46,6 @@ start_link({Name, RestartSpec, Jobs}) ->
 
 init([RestartSpec, Jobs]) ->
     Children = construct_supervised_children(Jobs),
-    io:format("pm_sup Children = ~p~n", [Children]),
     {ok, { RestartSpec, Children} }.
 
 %% ===================================================================
