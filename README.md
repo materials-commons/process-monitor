@@ -8,7 +8,9 @@ The system reads the file pm.config to configure the processes and supervision s
 The pm.config file is located in the INSTALL_DIR/etc directory. The file has the following
 format:
 
+```erlang
 {SupervisorGroupName, RestartSpec, [JobSpec]}.
+```
 
 You can have multiple entries in the file.
 
