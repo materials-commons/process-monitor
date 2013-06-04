@@ -1,0 +1,3 @@
+#!/bin/sh
+export ETC_DIR=`pwd`/rel/process_monitor/etc
+erl -pa deps/handyman/ebin -pa ebin
