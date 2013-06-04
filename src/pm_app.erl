@@ -25,12 +25,33 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+
+%% API
+-export([start/0]).
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
 
+start() ->
+    application:start(handyman),
+    application:start(process_monitor).
+
+
 start(_StartType, _StartArgs) ->
-    pm_sup:start_link().
+    start_supervisors(),
+    ok.
 
 stop(_State) ->
     ok.
+
+%% ===================================================================
+%% Local functions
+%% ===================================================================
+
+start_supervisors() ->
+    {ok, Terms} = file:consult(filename:join([os:getenv("ETC_DIR"), "pm.config"])),
+    lists:foreach(
+        fun({_SupervisorGroup, _RestartSpec, _Jobs} = SupervisorArgs) ->
+            pm_sup:start_link(SupervisorArgs)
+        end, Terms).
