@@ -21,7 +21,7 @@
 -module(pm_server).
 
 %% API
--export([start_link/2, stop/1]).
+-export([start_link/2, stop/1, info/1]).
 
 -behaviour(gen_server).
 
@@ -29,16 +29,20 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(state,
-            {
-                port :: port(), % External process port
-                command :: string() % Command running on port
-            }).
+        {
+            port :: port(), % External process port
+            command :: string(), % Command running on port
+            os_pid :: any() % Pid of OS process
+        }).
 
 start_link(Name, ExternalProcess) ->
     gen_server:start_link({local, Name}, ?MODULE, [ExternalProcess], []).
 
 stop(Pid) ->
     gen_server:cast(Pid, stop).
+
+info(Pid) ->
+    gen_server:call(Pid, info).
 
 %% ===================================================================
 %% gen_server callbacks
@@ -51,13 +55,16 @@ init([ExternalProcess]) ->
     {ok, #state{command = ExternalProcess}}.
 
 %% @private
+handle_call(info, _From, #state{command = Command, os_pid = OsPid} = State) ->
+    {reply, {ok, {Command, OsPid}}, State};
 handle_call(_Request, _From, State) ->
     {reply, {error, unknown_call}, State}.
 
 %% @private
 handle_cast({start_process, ExternalProcess}, _State) ->
     Port = open_port({spawn, ExternalProcess}, []),
-    {noreply, #state{port = Port}};
+    {os_pid, OsPid} = lists:keyfind(os_pid, 1, erlang:port_info(Port)),
+    {noreply, #state{port = Port, os_pid = OsPid, command = ExternalProcess}};
 handle_cast(stop, State) ->
     {stop, normal, State}.
 

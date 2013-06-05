@@ -50,4 +50,4 @@ construct_children({ok, Terms}) ->
 construct_children(_Ignore) -> ok.
 
 create_supervisor_name(SupervisorGroup) ->
-    list_to_atom(atom_to_list(?MODULE) ++ "_" ++ atom_to_list(SupervisorGroup)).
+    list_to_atom(atom_to_list(pm_sup) ++ "_" ++ atom_to_list(SupervisorGroup)).
