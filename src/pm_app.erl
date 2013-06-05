@@ -34,6 +34,7 @@
 %% ===================================================================
 
 start() ->
+    application:start(sasl),
     application:start(handyman),
     application:start(process_monitor).
 

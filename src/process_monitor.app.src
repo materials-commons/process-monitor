@@ -13,7 +13,8 @@
   {registered, [pm_core_sup]},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  sasl
                  ]},
   {mod, { pm_app, []}},
   {env, []}

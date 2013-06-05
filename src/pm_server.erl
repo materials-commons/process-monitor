@@ -28,7 +28,11 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {port}).
+-record(state,
+            {
+                port :: port(), % External process port
+                command :: string() % Command running on port
+            }).
 
 start_link(Name, ExternalProcess) ->
     gen_server:start_link({local, Name}, ?MODULE, [ExternalProcess], []).
@@ -44,7 +48,7 @@ stop(Pid) ->
 init([ExternalProcess]) ->
     process_flag(trap_exit, true),
     gen_server:cast(self(), {start_process, ExternalProcess}),
-    {ok, #state{}}.
+    {ok, #state{command = ExternalProcess}}.
 
 %% @private
 handle_call(_Request, _From, State) ->
@@ -58,7 +62,8 @@ handle_cast(stop, State) ->
     {stop, normal, State}.
 
 %% @private
-handle_info({'EXIT', _Port, Reason}, State) ->
+handle_info({'EXIT', _Port, Reason}, #state{command = Command} = State) ->
+    error_logger:info_msg("External process ~s unexpectedly exited.", [Command]),
     {stop, {port_terminated, Reason}, State};
 handle_info(_Info, State) ->
     {noreply, State}.
@@ -66,6 +71,7 @@ handle_info(_Info, State) ->
 %% @private
 %% Do something when the process terminates
 terminate({port_terminated, _Reason}, _State) ->
+    error_logger:info_msg("Terminating because of external process exit"),
     ok;
 terminate(_Reason, #state{port = Port}) ->
     port_close(Port),

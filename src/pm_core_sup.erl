@@ -25,7 +25,7 @@
 -behaviour(supervisor).
 -export([init/1]).
 
--define(CHILD(Args), {pm_sup, {pm_sup, start_link, Args}, permanent, 5000, supervisor, [pm_sup]}).
+-define(CHILD(Name, Arg), {Name, {pm_sup, start_link, [Name,Arg]}, permanent, 5000, supervisor, [pm_sup]}).
 
 
 -define(SERVER, ?MODULE).
@@ -43,7 +43,11 @@ setup_supervisor_children() ->
 
 construct_children({ok, Terms}) ->
     lists:flatten(lists:map(
-            fun({_SupervisorGroup, _RestartSpec, _Jobs} = SupervisorArgs) ->
-                ?CHILD([SupervisorArgs])
+            fun({SupervisorGroup, _RestartSpec, _Jobs} = SupervisorArgs) ->
+                SupervisorName = create_supervisor_name(SupervisorGroup),
+                ?CHILD(SupervisorName, SupervisorArgs)
             end, Terms));
 construct_children(_Ignore) -> ok.
+
+create_supervisor_name(SupervisorGroup) ->
+    list_to_atom(atom_to_list(?MODULE) ++ "_" ++ atom_to_list(SupervisorGroup)).

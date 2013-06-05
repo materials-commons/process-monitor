@@ -24,7 +24,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -36,8 +36,7 @@
 %% API functions
 %% ===================================================================
 
-start_link({Name, RestartSpec, Jobs}) ->
-    SupervisorName = create_supervisor_name(Name),
+start_link(SupervisorName, {_JobGroupName, RestartSpec, Jobs}) ->
     supervisor:start_link({local, SupervisorName}, ?MODULE, [RestartSpec, Jobs]).
 
 %% ===================================================================
@@ -51,8 +50,7 @@ init([RestartSpec, Jobs]) ->
 %% ===================================================================
 %% Local functions
 %% ===================================================================
-create_supervisor_name(JobGroupName) ->
-    list_to_atom(atom_to_list(?MODULE) ++ "_" ++ atom_to_list(JobGroupName)).
+
 
 %%
 construct_supervised_children(Jobs) ->
