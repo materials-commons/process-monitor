@@ -4,13 +4,17 @@
   {vsn, "0.1.0"},
   {modules,
         [
+            pm_api,
+            pm_api_server,
             pm_app,
+            pm_core_sup,
             pm_server,
             pm_sup,
-            pm_core_sup
+            pmctl,
+            process_monitor
         ]
   },
-  {registered, [pm_core_sup]},
+  {registered, [pm_core_sup, pm_api_server]},
   {applications, [
                   kernel,
                   stdlib,

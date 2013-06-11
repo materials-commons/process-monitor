@@ -26,6 +26,7 @@
 -export([init/1]).
 
 -define(CHILD(Name, Arg), {Name, {pm_sup, start_link, [Name,Arg]}, permanent, 5000, supervisor, [pm_sup]}).
+-define(APICHILD, {pm_api_server, {pm_api_server, start_link, []}, permanent, 5000, worker, [pm_api_server]}).
 
 
 -define(SERVER, ?MODULE).
@@ -36,7 +37,7 @@ start_link() ->
 %% @private
 init([]) ->
     Children = setup_supervisor_children(),
-    {ok, {{one_for_one, 5, 10}, Children}}.
+    {ok, {{one_for_one, 5, 10}, Children ++ [?APICHILD]}}.
 
 setup_supervisor_children() ->
     construct_children(file:consult(filename:join([os:getenv("ETC_DIR"), "pm.config"]))).

@@ -15,13 +15,19 @@ deps:
 generate:
 	./rebar generate
 
+cli: compile
+	./rebar -C rebar.pmctl.config escriptize
+
 #cli: compile
 #	./rebar escriptize
 #	./rebar -C rebar.config.sfpw escriptize
 
-rel: rel-config deps compile generate
+rel: stop-epmd rel-config deps compile cli generate
 
-devrel: devl-rel-config deps compile generate
+devrel: stop-epmd devl-rel-config deps compile cli generate
+
+stop-epmd:
+	-epmd -kill
 
 rel-config:
 	cp rel/files/app.config.rel rel/files/app.config

@@ -1,8 +1,7 @@
 %%% ===================================================================
 %%% @author V. Glenn Tarcea <gtarcea@umich.edu>
 %%%
-%%% @doc API for monitoring, controlling and getting information on the
-%%       processes being monitored.
+%%% @doc Server for handling API requests.
 %%%
 %%% @copyright Copyright (c) 2013, Regents of the University of Michigan.
 %%% All rights reserved.
@@ -21,82 +20,42 @@
 %%% ===================================================================
 -module(process_monitor).
 
-%% API
--export([list_sgroups/0, list_sgroup_children/1, list_sgroup_job_groups/1, restart_sgroup/1,
-		 restart_sgroup_job_group/2]).
+-export([
+            list_sgroups/0, list_sgroups/1,
+            list_sgroup_children/1, list_sgroup_children/2,
+            list_sgroup_job_groups/1, list_sgroup_job_groups/2,
+            restart_sgroup/1, restart_sgroup/2,
+            restart_sgroup_job_group/2, restart_sgroup_job_group/3
+        ]).
 
-%% ===================================================================
-%% API
-%% ===================================================================
 list_sgroups() ->
-    [ {group_name(Supervisor), Supervisor} ||
-        {Supervisor, _Pid, _Type, _Modules} <- supervisor:which_children(pm_core_sup)].
+    list_sgroups(localnode()).
 
-list_sgroup_job_groups(SupervisorGroup) ->
-    Children = list_sgroup_children(SupervisorGroup),
-    unique_job_groups(Children).
+list_sgroups(Node) ->
+    pm_api_server:list_sgroups(Node).
 
-list_sgroup_children(Group) ->
-    [create_process_entry(Server, Pid) || {Server, Pid, _Type, _Modules} <-
-											  supervisor:which_children(to_supervisor_name(Group))].
+list_sgroup_children(SGroup) ->
+    list_sgroup_children(localnode(), SGroup).
 
-restart_sgroup(SupervisorGroup) ->
-	for_each_server(fun(Entry, SupervisorName) ->
-							{server, ServerName} = lists:keyfind(server, 1, Entry),
-							restart_child(SupervisorName, ServerName)
-					end, SupervisorGroup).
+list_sgroup_children(Node, SGroup) ->
+    pm_api_server:list_sgroup_children(Node, SGroup).
 
-restart_sgroup_job_group(SupervisorGroup, JobGroup) ->
-	for_each_server(fun(Entry, SupervisorName) ->
-							{server, ServerName} = lists:keyfind(server, 1, Entry),
-							case is_in_jobgroup(ServerName, JobGroup) of
-								true -> restart_child(SupervisorName, ServerName);
-								false -> ok
-							end
-					end, SupervisorGroup).
+list_sgroup_job_groups(SGroup) ->
+    list_sgroup_job_groups(localnode(), SGroup).
 
-%% ===================================================================
-%% Local
-%% ===================================================================
-group_name(Supervisor) ->
-	list_to_atom(string:substr(atom_to_list(Supervisor), 8)). % remove pm_sup_ from supervisor name
+list_sgroup_job_groups(Node, SGroup) ->
+    pm_api_server:list_sgroup_job_groups(Node, SGroup).
 
-to_supervisor_name(Group) ->
-    case starts_with(pm_sup, Group) of
-        true -> Group; % Someone gave us the supervisor name.
-        false -> make_supervisor_name(Group)
-    end.
+restart_sgroup(SGroup) ->
+    restart_sgroup(localnode(), SGroup).
 
-make_supervisor_name(Group) ->
-    list_to_atom("pm_sup_" ++ atom_to_list(Group)).
+restart_sgroup(Node, SGroup) ->
+    pm_api_server:restart_sgroup(Node, SGroup).
 
-starts_with(What, In) ->
-    string:str(atom_to_list(In), atom_to_list(What)) =:= 1.
+restart_sgroup_job_group(SGroup, JobGroup) ->
+    restart_sgroup_job_group(localnode(), SGroup, JobGroup).
 
-create_process_entry(Server, Pid) ->
-    {ok, {Command, OsPid}} = pm_server:info(Pid),
-    [{server, Server}, {command, Command}, {os_pid, OsPid}].
+restart_sgroup_job_group(Node, SGroup, JobGroup) ->
+    pm_api_server:restart_sgroup_job_group(Node, SGroup, JobGroup).
 
-unique_job_groups(Children) ->
-    sets:to_list(sets:from_list([create_job_group(lists:keyfind(server, 1, Entry)) || Entry <- Children])).
-
-create_job_group({server, Server}) ->
-    %% Server name is pm_server_<name>_<number>
-    %% pm_server_ is 10 characters, so start at 11th character
-    ServerString = atom_to_list(Server),
-    EndIndex = string:rchr(ServerString, $_) - 1,
-    list_to_atom(string:sub_string(ServerString, 11, EndIndex)).
-
-for_each_server(Fn, SupervisorGroup) ->
-	SupervisorName = make_supervisor_name(SupervisorGroup),
-	lists:foreach(fun(Entry) -> Fn(Entry, SupervisorName) end, list_sgroup_children(SupervisorGroup)).
-
-is_in_jobgroup(Server, JobGroup) ->
-	create_job_group({server, Server}) =:= JobGroup.
-
-restart_child(SupervisorName, ServerName) ->
-	supervisor:terminate_child(SupervisorName, ServerName),
-	supervisor:restart_child(SupervisorName, ServerName).
-
-
-
+localnode() -> pm_api_server:localnode().
