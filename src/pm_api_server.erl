@@ -21,8 +21,14 @@
 -module(pm_api_server).
 
 %% API
--export([start_link/0, list_sgroups/1, list_sgroup_children/2, list_sgroup_job_groups/2,
-            restart_sgroup/2, restart_sgroup_job_group/3, localnode/0]).
+-export([
+            start_link/0,
+            list_sgroups/1, list_sgroup_children/2, list_sgroup_job_groups/2,
+            restart_sgroup/2, restart_sgroup_job_group/3,
+            stop_sgroup/2, stop_sgroup_job_group/3,
+            start_sgroup/2, start_sgroup_job_group/3,
+            localnode/0
+        ]).
 
 -behaviour(gen_server).
 
@@ -56,6 +62,18 @@ restart_sgroup(Node, SGroup) ->
 restart_sgroup_job_group(Node, SGroup, JobGroup) ->
     gen_server:cast({?SERVER, Node}, {restart_sgroup_job_group, SGroup, JobGroup}).
 
+stop_sgroup(Node, SGroup) ->
+    gen_server:cast({?SERVER, Node}, {stop_sgroup, SGroup}).
+
+stop_sgroup_job_group(Node, SGroup, JobGroup) ->
+    gen_server:cast({?SERVER, Node}, {stop_sgroup_job_group, SGroup, JobGroup}).
+
+start_sgroup(Node, SGroup) ->
+    gen_server:cast({?SERVER, Node}, {start_sgroup, SGroup}).
+
+start_sgroup_job_group(Node, SGroup, JobGroup) ->
+    gen_server:cast({?SERVER, Node}, {start_sgroup_job_group, SGroup, JobGroup}).
+
 %% ===================================================================
 %% gen_server callbacks
 %% ===================================================================
@@ -80,6 +98,18 @@ handle_cast({restart_sgroup, SGroup}, State) ->
     {noreply, State};
 handle_cast({restart_sgroup_job_group, SGroup, JobGroup}, State) ->
     pm_api:restart_sgroup_job_group(SGroup, JobGroup),
+    {noreply, State};
+handle_cast({stop_sgroup, SGroup}, State) ->
+    pm_api:stop_sgroup(SGroup),
+    {noreply, State};
+handle_cast({stop_sgroup_job_group, SGroup, JobGroup}, State) ->
+    pm_api:stop_sgroup_job_group(SGroup, JobGroup),
+    {noreply, State};
+handle_cast({start_sgroup, SGroup}, State) ->
+    pm_api:start_sgroup(SGroup),
+    {noreply, State};
+handle_cast({start_sgroup_job_group, SGroup, JobGroup}, State) ->
+    pm_api:start_sgroup_job_group(SGroup, JobGroup),
     {noreply, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.

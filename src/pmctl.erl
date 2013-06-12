@@ -57,7 +57,12 @@ usage(Message) ->
 
 usage() ->
     getopt:usage(opt_spec(), "pmctl", "<command>" ),
-    io:format(standard_error, " Commands: stop, start, restart, listsgroups, listjgroups, listchildren~n", []),
+    Commands =
+            " Commands: stopsgroup, stopjgroup~n" ++
+            "           startsgroup, startjgroup~n" ++
+            "           restartsgroup, restartjgroup~n" ++
+            "           listsgroups, listjgroups, listchildren~n",
+    io:format(standard_error, Commands, []),
     halt().
 
 opt_spec() ->
@@ -90,9 +95,13 @@ execute_commands(#cargs{sgroup = SGroup, jgroup = JGroup, commands = Commands}) 
                     listjgroups(SGroup);
                 ("listchildren") ->
                     listchildren(SGroup);
-                ("stop") ->
+                ("stopsgroup") ->
                     stop(SGroup, JGroup);
-                ("start") ->
+                ("stopjgroup") ->
+                    stop(SGroup, JGroup);
+                ("startsgroup") ->
+                    start(SGroup, JGroup);
+                ("startjgroup") ->
                     start(SGroup, JGroup);
                 ("restartsgroup") ->
                     restartsgroup(SGroup);
@@ -132,7 +141,11 @@ listchildren(SGroup) ->
 stop(_V1, _V2) -> ok.
 start(_V1, _V2) -> ok.
 
-restartjgroup(_V1, _V2) -> ok.
+restartjgroup(SGroup, JGroup) when SGroup =:= false; JGroup =:= false ->
+    usage("An SGroup and a JGroup must be specified");
+restartjgroup(SGroup, JGroup) ->
+    io:format("Restarting JGroup ~p for SGroup ~p ~n", [JGroup, SGroup]),
+    process_monitor:restart_sgroup_job_group(SGroup, JGroup).
 
 restartsgroup(false) -> usage("No SGroup specified");
 restartsgroup(SGroup) ->

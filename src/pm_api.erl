@@ -22,56 +22,78 @@
 -module(pm_api).
 
 %% API
--export([list_sgroups/0, list_sgroup_children/1, list_sgroup_job_groups/1, restart_sgroup/1,
-		 restart_sgroup_job_group/2]).
+-export([
+            list_sgroups/0, list_sgroup_children/1, list_sgroup_job_groups/1,
+            restart_sgroup/1, restart_sgroup_job_group/2,
+            stop_sgroup/1, stop_sgroup_job_group/2,
+            start_sgroup/1, start_sgroup_job_group/2
+        ]).
 
 %% ===================================================================
 %% API
 %% ===================================================================
 list_sgroups() ->
     [ {group_name(Supervisor), Supervisor} ||
-        {Supervisor, _Pid, _Type, _Modules} <- supervisor:which_children(pm_core_sup), Supervisor /= pm_api_server].
+            {Supervisor, _Pid, _Type, _Modules} <-
+                supervisor:which_children(pm_core_sup), Supervisor /= pm_api_server].
 
 list_sgroup_job_groups(SupervisorGroup) ->
-    try
-        Children = list_sgroup_children(SupervisorGroup),
-        unique_job_groups(Children)
-    catch
-        _Error:_Reason -> {error, badgroup}
-    end.
+    Fun =
+        fun() ->
+            Children = list_sgroup_children(SupervisorGroup),
+            unique_job_groups(Children)
+        end,
+    execute_api_command(Fun).
 
 list_sgroup_children(Group) ->
-    try
-        [create_process_entry(Server, Pid) || {Server, Pid, _Type, _Modules} <-
-											  supervisor:which_children(to_supervisor_name(Group))]
-    catch
-        _Error:_Reason -> {error, badgroup}
-    end.
+    Fun =
+        fun() ->
+            [create_process_entry(Server, Pid) || {Server, Pid, _Type, _Modules} <-
+                                              supervisor:which_children(to_supervisor_name(Group))]
+        end,
+    execute_api_command(Fun).
 
 restart_sgroup(SupervisorGroup) ->
-    try
-        for_each_server(
-                    fun(Entry, SupervisorName) ->
-							{server, ServerName} = lists:keyfind(server, 1, Entry),
-							restart_child(SupervisorName, ServerName)
-                    end, SupervisorGroup)
-    catch
-        _Error:_Reason -> {error, badgroup}
-    end.
+    Fun =
+        fun() ->
+            for_each_server(fun restart_child/2, SupervisorGroup)
+        end,
+    execute_api_command(Fun).
 
 restart_sgroup_job_group(SupervisorGroup, JobGroup) ->
-    try
-        for_each_server(
-                    fun(Entry, SupervisorName) ->
-							{server, ServerName} = lists:keyfind(server, 1, Entry),
-							case is_in_jobgroup(ServerName, JobGroup) of
-								true -> restart_child(SupervisorName, ServerName);
-								false -> ok
-							end
-					end, SupervisorGroup)
-    catch
-        _Error:_Reason -> {error, badgroup}
-    end.
+    Fun =
+        fun() ->
+            for_each_server_job_group(fun restart_child/2, SupervisorGroup, JobGroup)
+        end,
+    execute_api_command(Fun).
+
+stop_sgroup(SupervisorGroup) ->
+    Fun =
+        fun() ->
+            for_each_server(fun supervisor:terminate_child/2, SupervisorGroup)
+        end,
+    execute_api_command(Fun).
+
+stop_sgroup_job_group(SupervisorGroup, JobGroup) ->
+    Fun =
+        fun() ->
+            for_each_server_job_group(fun supervisor:terminate_child/2, SupervisorGroup, JobGroup)
+        end,
+    execute_api_command(Fun).
+
+start_sgroup(SupervisorGroup) ->
+    Fun =
+        fun() ->
+            for_each_server(fun supervisor:restart_child/2, SupervisorGroup)
+        end,
+    execute_api_command(Fun).
+
+start_sgroup_job_group(SupervisorGroup, JobGroup) ->
+    Fun =
+        fun() ->
+            for_each_server_job_group(fun supervisor:terminate_child/2, SupervisorGroup, JobGroup)
+        end,
+    execute_api_command(Fun).
 
 %% ===================================================================
 %% Local
@@ -107,7 +129,21 @@ create_job_group({server, Server}) ->
 
 for_each_server(Fn, SupervisorGroup) ->
 	SupervisorName = make_supervisor_name(SupervisorGroup),
-	lists:foreach(fun(Entry) -> Fn(Entry, SupervisorName) end, list_sgroup_children(SupervisorGroup)).
+	lists:foreach(
+                fun(Entry) ->
+                    {server, ServerName} = lists:keyfind(server, 1, Entry),
+                    Fn(SupervisorName, ServerName)
+                end, list_sgroup_children(SupervisorGroup)).
+
+for_each_server_job_group(Fn, SupervisorGroup, JobGroup) ->
+    Fun =
+        fun(SupervisorName, ServerName) ->
+            case is_in_jobgroup(ServerName, JobGroup) of
+                true -> Fn(SupervisorName, ServerName);
+                false -> ok
+            end
+        end,
+    for_each_server(Fun, SupervisorGroup).
 
 is_in_jobgroup(Server, JobGroup) ->
 	create_job_group({server, Server}) =:= JobGroup.
@@ -116,5 +152,11 @@ restart_child(SupervisorName, ServerName) ->
 	supervisor:terminate_child(SupervisorName, ServerName),
 	supervisor:restart_child(SupervisorName, ServerName).
 
+execute_api_command(Fun) ->
+    try
+        Fun()
+    catch
+        _Error:_Reason -> {error, badgroup}
+    end.
 
 
