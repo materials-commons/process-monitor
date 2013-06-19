@@ -23,10 +23,6 @@
 %% API main for script
 -export([main/1]).
 
-%% Export so there are no warning
--export([listjgroups/1, listchildren/1, stopsgroup/1, stopjgroup/2, startsgroup/1,
-            startjgroup/2, restartsgroup/1, restartjgroup/2]).
-
 -record(cargs,
         {
             sgroup :: string(),
@@ -96,34 +92,34 @@ execute_commands(#cargs{sgroup = SGroup, jgroup = JGroup, commands = Commands}) 
             fun ("listsgroups") ->
                     listsgroups();
                 ("listjgroups") ->
-                    run_sgroup_command(listjgroups, SGroup);
+                    run_sgroup_command(fun listjgroups/1, SGroup);
                 ("listchildren") ->
-                    run_sgroup_command(listchildren, SGroup);
+                    run_sgroup_command(fun listchildren/1, SGroup);
                 ("stopsgroup") ->
-                    run_sgroup_command(stopsgroup, SGroup);
+                    run_sgroup_command(fun stopsgroup/1, SGroup);
                 ("stopjgroup") ->
-                    run_sjgroups_command(stopjgroup, SGroup, JGroup);
+                    run_sjgroups_command(fun stopjgroup/2, SGroup, JGroup);
                 ("startsgroup") ->
-                    run_sgroup_command(startsgroup, SGroup);
+                    run_sgroup_command(fun startsgroup/1, SGroup);
                 ("startjgroup") ->
-                    run_sjgroups_command(startjgroup, SGroup, JGroup);
+                    run_sjgroups_command(fun startjgroup/2, SGroup, JGroup);
                 ("restartsgroup") ->
-                    run_sgroup_command(restartsgroup, SGroup);
+                    run_sgroup_command(fun restartsgroup/1, SGroup);
                 ("restartjgroup") ->
-                    run_sjgroups_command(restartjgroup, SGroup, JGroup);
+                    run_sjgroups_command(fun restartjgroup/2, SGroup, JGroup);
                 (Command) ->
                     usage("Unknown Command: " ++ Command)
             end, Commands).
 
 run_sgroup_command(_Command, false) ->
     usage("No SGroup specified");
-run_sgroup_command(Command, SGroup) ->
-    Command(SGroup).
+run_sgroup_command(Fun, SGroup) ->
+    Fun(SGroup).
 
 run_sjgroups_command(_Command, SGroup, JGroup) when SGroup =:= false; JGroup =:= false ->
     usage("An SGroup and a JGroup must be specified");
-run_sjgroups_command(Command, SGroup, JGroup) ->
-    Command(SGroup, JGroup).
+run_sjgroups_command(Fun, SGroup, JGroup) ->
+    Fun(SGroup, JGroup).
 
 listsgroups() ->
     lists:foreach(

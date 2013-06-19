@@ -132,7 +132,8 @@ for_each_server(Fn, SupervisorGroup) ->
 	lists:foreach(
                 fun(Entry) ->
                     {server, ServerName} = lists:keyfind(server, 1, Entry),
-                    Fn(SupervisorName, ServerName)
+                    RV = Fn(SupervisorName, ServerName),
+                    io:format("for_each_server: RV = ~p~n", [RV])
                 end, list_sgroup_children(SupervisorGroup)).
 
 for_each_server_job_group(Fn, SupervisorGroup, JobGroup) ->
@@ -153,10 +154,11 @@ restart_child(SupervisorName, ServerName) ->
 	supervisor:restart_child(SupervisorName, ServerName).
 
 execute_api_command(Fun) ->
-    try
-        Fun()
-    catch
-        _Error:_Reason -> {error, badgroup}
-    end.
+    Fun().
+    % try
+    %     Fun()
+    % catch
+    %     _Error:_Reason -> {error, badgroup}
+    % end.
 
 

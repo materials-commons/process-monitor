@@ -25,7 +25,11 @@
             list_sgroup_children/1, list_sgroup_children/2,
             list_sgroup_job_groups/1, list_sgroup_job_groups/2,
             restart_sgroup/1, restart_sgroup/2,
-            restart_sgroup_job_group/2, restart_sgroup_job_group/3
+            restart_sgroup_job_group/2, restart_sgroup_job_group/3,
+            stop_sgroup/1, stop_sgroup/2,
+            stop_sgroup_job_job_group/2, start_sgroup_job_group/3,
+            start_sgroup/1, start_sgroup/2,
+            start_sgroup_job_group/2, start_sgroup_job_group/3
         ]).
 
 list_sgroups() ->
