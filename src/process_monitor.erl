@@ -58,4 +58,28 @@ restart_sgroup_job_group(SGroup, JobGroup) ->
 restart_sgroup_job_group(Node, SGroup, JobGroup) ->
     pm_api_server:restart_sgroup_job_group(Node, SGroup, JobGroup).
 
+stop_sgroup(SGroup) ->
+    stop_sgroup(localnode(), SGroup).
+
+stop_sgroup(Node, SGroup) ->
+    pm_api_server:stop_sgroup(Node, SGroup).
+
+stop_sgroup_job_job_group(SGroup, JGroup) ->
+    stop_sgroup_job_job_group(localnode(), SGroup, JGroup).
+
+stop_sgroup_job_job_group(Node, SGroup, JGroup) ->
+    pm_api_server:stop_sgroup_job_job_group(Node, SGroup, JGroup).
+
+start_sgroup(SGroup) ->
+    start_sgroup(localnode(), SGroup).
+
+start_sgroup(Node, SGroup) ->
+    pm_api_server:start_sgroup(Node, SGroup).
+
+start_sgroup_job_group(SGroup, JGroup) ->
+    start_sgroup_job_group(localnode(), SGroup, JGroup).
+
+start_sgroup_job_group(Node, SGroup, JGroup) ->
+    pm_api_server:start_sgroup_job_group(Node, SGroup, JGroup).
+
 localnode() -> pm_api_server:localnode().

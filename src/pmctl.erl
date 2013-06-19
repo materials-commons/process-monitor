@@ -23,6 +23,10 @@
 %% API main for script
 -export([main/1]).
 
+%% Export so there are no warning
+-export([listjgroups/1, listchildren/1, stopsgroup/1, stopjgroup/2, startsgroup/1,
+            startjgroup/2, restartsgroup/1, restartjgroup/2]).
+
 -record(cargs,
         {
             sgroup :: string(),
@@ -92,24 +96,34 @@ execute_commands(#cargs{sgroup = SGroup, jgroup = JGroup, commands = Commands}) 
             fun ("listsgroups") ->
                     listsgroups();
                 ("listjgroups") ->
-                    listjgroups(SGroup);
+                    run_sgroup_command(listjgroups, SGroup);
                 ("listchildren") ->
-                    listchildren(SGroup);
+                    run_sgroup_command(listchildren, SGroup);
                 ("stopsgroup") ->
-                    stop(SGroup, JGroup);
+                    run_sgroup_command(stopsgroup, SGroup);
                 ("stopjgroup") ->
-                    stop(SGroup, JGroup);
+                    run_sjgroups_command(stopjgroup, SGroup, JGroup);
                 ("startsgroup") ->
-                    start(SGroup, JGroup);
+                    run_sgroup_command(startsgroup, SGroup);
                 ("startjgroup") ->
-                    start(SGroup, JGroup);
+                    run_sjgroups_command(startjgroup, SGroup, JGroup);
                 ("restartsgroup") ->
-                    restartsgroup(SGroup);
+                    run_sgroup_command(restartsgroup, SGroup);
                 ("restartjgroup") ->
-                    restartjgroup(SGroup, JGroup);
+                    run_sjgroups_command(restartjgroup, SGroup, JGroup);
                 (Command) ->
                     usage("Unknown Command: " ++ Command)
             end, Commands).
+
+run_sgroup_command(_Command, false) ->
+    usage("No SGroup specified");
+run_sgroup_command(Command, SGroup) ->
+    Command(SGroup).
+
+run_sjgroups_command(_Command, SGroup, JGroup) when SGroup =:= false; JGroup =:= false ->
+    usage("An SGroup and a JGroup must be specified");
+run_sjgroups_command(Command, SGroup, JGroup) ->
+    Command(SGroup, JGroup).
 
 listsgroups() ->
     lists:foreach(
@@ -117,16 +131,12 @@ listsgroups() ->
             io:format("~p~n", [SGroup])
         end, process_monitor:list_sgroups()).
 
-listjgroups(false) ->
-    usage("No SGroup specified");
 listjgroups(SGroup) ->
     case process_monitor:list_sgroup_job_groups(SGroup) of
         {error, badgroup} -> usage("Unknown SGroup: " ++ SGroup);
         Groups -> lists:foreach(fun(Group) -> io:format("~p~n", [Group]) end, Groups)
     end.
 
-listchildren(false) ->
-    usage("No SGroup specified");
 listchildren(SGroup) ->
     case process_monitor:list_sgroup_children(SGroup) of
         {error, badgroup} ->
@@ -138,16 +148,26 @@ listchildren(SGroup) ->
                     end, Children)
     end.
 
-stop(_V1, _V2) -> ok.
-start(_V1, _V2) -> ok.
+stopsgroup(SGroup) ->
+    io:format("Stopping SGroup ~p~n", [SGroup]),
+    process_monitor:stop_sgroup(SGroup).
 
-restartjgroup(SGroup, JGroup) when SGroup =:= false; JGroup =:= false ->
-    usage("An SGroup and a JGroup must be specified");
+stopjgroup(SGroup, JGroup) ->
+    io:format("Stopping JGroup ~p for SGroup ~p ~n", [JGroup, SGroup]),
+    process_monitor:stop_sgroup_job_group(SGroup, JGroup).
+
+startsgroup(SGroup) ->
+    io:format("Starting SGroup ~p~n", [SGroup]),
+    process_monitor:start_sgroup(SGroup).
+
+startjgroup(SGroup, JGroup) ->
+    io:format("Starting JGroup ~p for SGroup ~p~n", [JGroup, SGroup]),
+    process_monitor:start_sgroup_job_group(SGroup, JGroup).
+
 restartjgroup(SGroup, JGroup) ->
     io:format("Restarting JGroup ~p for SGroup ~p ~n", [JGroup, SGroup]),
     process_monitor:restart_sgroup_job_group(SGroup, JGroup).
 
-restartsgroup(false) -> usage("No SGroup specified");
 restartsgroup(SGroup) ->
     io:format("Restarting SGroup: ~s~n", [SGroup]),
     process_monitor:restart_sgroup(SGroup).
