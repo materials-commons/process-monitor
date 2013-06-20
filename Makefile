@@ -41,11 +41,14 @@ relclean:
 appclean:
 	rm -f ebin/*.beam
 
-clean: distclean
+clean: distclean cliclean
 	./rebar clean
 
 distclean:
 	./rebar delete-deps
+
+cliclean:
+	rm -f bin/*
 
 test: all
 	./rebar skip_deps=true eunit
