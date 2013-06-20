@@ -113,6 +113,8 @@ make_supervisor_name(Group) ->
 starts_with(What, In) ->
     string:str(atom_to_list(In), atom_to_list(What)) =:= 1.
 
+create_process_entry(Server, undefined) ->
+    [{server, Server}, {command, undefined}, {os_pid, not_running}];
 create_process_entry(Server, Pid) ->
     {ok, {Command, OsPid}} = pm_server:info(Pid),
     [{server, Server}, {command, Command}, {os_pid, OsPid}].
@@ -132,8 +134,7 @@ for_each_server(Fn, SupervisorGroup) ->
 	lists:foreach(
                 fun(Entry) ->
                     {server, ServerName} = lists:keyfind(server, 1, Entry),
-                    RV = Fn(SupervisorName, ServerName),
-                    io:format("for_each_server: RV = ~p~n", [RV])
+                    Fn(SupervisorName, ServerName)
                 end, list_sgroup_children(SupervisorGroup)).
 
 for_each_server_job_group(Fn, SupervisorGroup, JobGroup) ->
