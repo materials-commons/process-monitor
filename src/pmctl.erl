@@ -111,15 +111,28 @@ execute_commands(#cargs{sgroup = SGroup, jgroup = JGroup, commands = Commands}) 
                     usage("Unknown Command: " ++ Command)
             end, Commands).
 
+%% ======================================================================================
+%% Note: The run_sgroup_command and run_sjgroups_command have a 1 second timer:sleep()
+%% call in them. The reason for this is the cast returns immediately, and then the cli
+%% exits. This interaction appears to be causing the message not to be sent. The sleep
+%% fixed this issue.
+%% ======================================================================================
+
 run_sgroup_command(_Command, false) ->
     usage("No SGroup specified");
 run_sgroup_command(Fun, SGroup) ->
-    Fun(SGroup).
+    Fun(SGroup),
+    timer:sleep(1000).
 
 run_sjgroups_command(_Command, SGroup, JGroup) when SGroup =:= false; JGroup =:= false ->
     usage("An SGroup and a JGroup must be specified");
 run_sjgroups_command(Fun, SGroup, JGroup) ->
-    Fun(SGroup, JGroup).
+    Fun(SGroup, JGroup),
+    timer:sleep(1000).
+
+%% ======================================================================================
+%% ^^^^^^^^^^^^^^^^^^^^^^^^^^^ **** See Comment Above **** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+%% ======================================================================================
 
 listsgroups() ->
     lists:foreach(
