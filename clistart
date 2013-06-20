@@ -1,0 +1,3 @@
+#!/bin/sh
+export ETC_DIR=`pwd`/rel/process_monitor/etc
+erl -setcookie process_monitor -name pmcli@127.0.0.1 -pa deps/handyman/ebin -pa ebin

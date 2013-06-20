@@ -1,3 +1,3 @@
 #!/bin/sh
 export ETC_DIR=`pwd`/rel/process_monitor/etc
-erl -pa deps/handyman/ebin -pa ebin
+erl -setcookie process_monitor -name process_monitor@127.0.0.1 -pa deps/handyman/ebin -pa ebin
